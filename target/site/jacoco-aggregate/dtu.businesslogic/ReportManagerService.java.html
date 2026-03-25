@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>ReportManagerService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">JaCoCo Coverage Report</a> &gt; <a href="index.source.html" class="el_package">dtu.businesslogic</a> &gt; <span class="el_source">ReportManagerService.java</span></div><h1>ReportManagerService.java</h1><pre class="source lang-java linenums">package dtu.businesslogic;
+
+import java.util.Map;
+import java.util.UUID;
+
+import dtu.aggregate.AccountId;
+import dtu.aggregate.Report;
+import dtu.aggregate.UserType;
+import dtu.repositories.ReadModelRepository;
+import dtu.repositories.ReportRepository;
+import messaging.Event;
+import messaging.MessageQueue;
+
+public class ReportManagerService {
+
+    private final MessageQueue queue;
+    private final ReportRepository reportRepository;
+    private final ReadModelRepository readModelRepository;
+    
+<span class="fc" id="L20">    private final String CUSTOMER_REPORT_HISTORY_REQUESTED = &quot;GetCustomerReportHistoryRequested&quot;;</span>
+<span class="fc" id="L21">    private final String MERCHANT_REPORT_HISTORY_REQUESTED = &quot;GetMerchantReportHistoryRequested&quot;;</span>
+<span class="fc" id="L22">    private final String MANAGER_REPORT_HISTORY_REQUESTED = &quot;GetManagerReportHistoryRequested&quot;;</span>
+<span class="fc" id="L23">    private final String CUSTOMER_REPORT_HISTORY_RECEIVED = &quot;CustomerReportHistoryReceived&quot;;</span>
+<span class="fc" id="L24">    private final String MERCHANT_REPORT_HISTORY_RECEIVED = &quot;MerchantReportHistoryReceived&quot;;</span>
+<span class="fc" id="L25">    private final String MANAGER_REPORT_HISTORY_RECEIVED = &quot;ManagerReportHistoryReceived&quot;;</span>
+
+<span class="fc" id="L27">    public ReportManagerService(MessageQueue q) {</span>
+<span class="fc" id="L28">        this.queue = q;</span>
+<span class="fc" id="L29">        this.reportRepository = new ReportRepository(queue);</span>
+<span class="fc" id="L30">        this.readModelRepository = new ReadModelRepository(queue);</span>
+
+        // These events triggers saving of metadata
+<span class="fc" id="L33">        q.addHandler(&quot;GetCustomerReportRequested&quot;, this::commandReportCreated);</span>
+<span class="fc" id="L34">        q.addHandler(&quot;GetMerchantReportRequested&quot;, this::commandReportCreated);</span>
+<span class="fc" id="L35">        q.addHandler(&quot;GetAllReportRequested&quot;, this::commandReportCreated);</span>
+
+        // These events triggers retrieval of report history
+<span class="fc" id="L38">        q.addHandler(CUSTOMER_REPORT_HISTORY_REQUESTED, this::commandGetReportHistory);</span>
+<span class="fc" id="L39">        q.addHandler(MERCHANT_REPORT_HISTORY_REQUESTED, this::commandGetReportHistory);</span>
+<span class="fc" id="L40">        q.addHandler(MANAGER_REPORT_HISTORY_REQUESTED, this::commandGetReportHistory);</span>
+<span class="fc" id="L41">    }</span>
+
+    private void commandReportCreated(Event event) {
+<span class="fc" id="L44">        String correlationId = event.getArgument(0, String.class);</span>
+<span class="fc" id="L45">        AccountId accountId = parseAccountId(event);</span>
+        UserType userType;
+<span class="fc" id="L47">        String topic = event.getTopic();</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">        if (&quot;GetCustomerReportRequested&quot;.equals(topic)) {</span>
+<span class="fc" id="L49">            userType = UserType.CUSTOMER;</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        } else if (&quot;GetMerchantReportRequested&quot;.equals(topic)) {</span>
+<span class="fc" id="L51">            userType = UserType.MERCHANT;</span>
+        } else {
+<span class="fc" id="L53">            userType = UserType.MANAGER;</span>
+        }
+<span class="fc" id="L55">        Report record = Report.create(correlationId, accountId, userType);</span>
+<span class="nc" id="L56">        reportRepository.save(record);</span>
+<span class="nc" id="L57">    }</span>
+
+    private void commandGetReportHistory(Event event) {
+<span class="fc" id="L60">        String topic = event.getTopic();</span>
+<span class="fc" id="L61">        String correlationId = event.getArgument(0, String.class);</span>
+        String newTopic;
+        UserType userType;
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        if (CUSTOMER_REPORT_HISTORY_REQUESTED.equals(topic)) {</span>
+<span class="fc" id="L65">            newTopic = CUSTOMER_REPORT_HISTORY_RECEIVED;</span>
+<span class="fc" id="L66">            userType = UserType.CUSTOMER;</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        } else if (MERCHANT_REPORT_HISTORY_REQUESTED.equals(topic)) {</span>
+<span class="fc" id="L68">            newTopic = MERCHANT_REPORT_HISTORY_RECEIVED;</span>
+<span class="fc" id="L69">            userType = UserType.MERCHANT;</span>
+<span class="pc bpc" id="L70" title="1 of 2 branches missed.">        } else if (MANAGER_REPORT_HISTORY_REQUESTED.equals(topic)) {</span>
+<span class="fc" id="L71">            newTopic = MANAGER_REPORT_HISTORY_RECEIVED;</span>
+<span class="fc" id="L72">            userType = UserType.MANAGER;</span>
+        } else {
+<span class="nc" id="L74">            return;</span>
+        }
+
+        String reportJson;
+        try {
+<span class="fc" id="L79">            AccountId accountId = parseAccountId(event);</span>
+<span class="fc" id="L80">        Report report = readModelRepository.fromAccountId(accountId);</span>
+<span class="pc bpc" id="L81" title="5 of 6 branches missed.">            if (report == null || report.getMetaDatas() == null || report.getMetaDatas().isEmpty()) {</span>
+<span class="fc" id="L82">                Report record = Report.create(correlationId, accountId, userType);</span>
+<span class="nc" id="L83">                reportRepository.save(record);</span>
+<span class="nc" id="L84">                report = record;</span>
+            }
+<span class="nc" id="L86">            reportJson = report.toJson();</span>
+<span class="fc" id="L87">        } catch (RuntimeException ex) {</span>
+<span class="fc" id="L88">            reportJson = &quot;{\&quot;history\&quot;:[{}]}&quot;;</span>
+<span class="nc" id="L89">        }</span>
+
+<span class="fc" id="L91">        Event newEvent = new Event(newTopic, correlationId, reportJson);</span>
+<span class="fc" id="L92">        queue.publish(newEvent);</span>
+<span class="fc" id="L93">    }</span>
+
+    private AccountId parseAccountId(Event event) {
+        Object raw;
+        try {
+<span class="fc" id="L98">            raw = event.getArgument(1, Object.class);</span>
+<span class="nc" id="L99">        } catch (RuntimeException ex) {</span>
+<span class="nc" id="L100">            throw new IllegalArgumentException(&quot;Missing account id argument&quot;, ex);</span>
+<span class="fc" id="L101">        }</span>
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">        if (raw == null) {</span>
+<span class="nc" id="L103">            throw new IllegalArgumentException(&quot;Account id argument is null&quot;);</span>
+        }
+<span class="pc bpc" id="L105" title="1 of 2 branches missed.">        if (raw instanceof String rawId) {</span>
+<span class="fc" id="L106">            return new AccountId(UUID.fromString(rawId));</span>
+        }
+<span class="nc bnc" id="L108" title="All 2 branches missed.">        if (raw instanceof UUID uuid) {</span>
+<span class="nc" id="L109">            return new AccountId(uuid);</span>
+        }
+<span class="nc bnc" id="L111" title="All 2 branches missed.">        if (raw instanceof Map&lt;?, ?&gt; map) {</span>
+<span class="nc" id="L112">            Object uuidValue = map.get(&quot;uuid&quot;);</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">            if (uuidValue != null) {</span>
+<span class="nc" id="L114">                return new AccountId(UUID.fromString(uuidValue.toString()));</span>
+            }
+<span class="nc" id="L116">            Object msb = map.get(&quot;mostSigBits&quot;);</span>
+<span class="nc" id="L117">            Object lsb = map.get(&quot;leastSigBits&quot;);</span>
+<span class="nc bnc" id="L118" title="All 4 branches missed.">            if (msb instanceof Number &amp;&amp; lsb instanceof Number) {</span>
+<span class="nc" id="L119">                return new AccountId(new UUID(((Number) msb).longValue(), ((Number) lsb).longValue()));</span>
+            }
+        }
+<span class="nc" id="L122">        throw new IllegalArgumentException(&quot;Unsupported account id argument: &quot; + raw);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

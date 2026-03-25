@@ -1,0 +1,180 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Token.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">JaCoCo Coverage Report</a> &gt; <a href="index.source.html" class="el_package">dtu.aggregate</a> &gt; <span class="el_source">Token.java</span></div><h1>Token.java</h1><pre class="source lang-java linenums">package dtu.aggregate;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+
+import dtu.events.TokenConsumed;
+import dtu.events.TokenInvalidated;
+import dtu.events.TokenIssued;
+import dtu.events.TokenReleased;
+import dtu.events.TokenReserved;
+import messaging.Event;
+import org.jmolecules.ddd.annotation.AggregateRoot;
+import org.jmolecules.ddd.annotation.Entity;
+import lombok.Getter;
+
+@AggregateRoot
+@Entity
+@Getter
+public class Token {
+    private TokenId tokenId;
+    private AccountId accountId;
+    private TokenStatus status;
+
+<span class="fc" id="L28">    private transient final List&lt;Event&gt; appliedEvents = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L29">    private transient final Map&lt;Class&lt;? extends Event&gt;, Consumer&lt;Event&gt;&gt; handlers = new HashMap&lt;&gt;();</span>
+
+    public static Token issue(AccountId accountId, TokenId tokenId) {
+<span class="fc" id="L32">        Token token = new Token();</span>
+<span class="fc" id="L33">        TokenIssued event = new TokenIssued(accountId, tokenId);</span>
+<span class="fc" id="L34">        token.apply(event);</span>
+<span class="fc" id="L35">        token.appliedEvents.add(event);</span>
+<span class="fc" id="L36">        return token;</span>
+    }
+
+    public static Token createFromEvents(Stream&lt;Event&gt; events) {
+<span class="fc" id="L40">        Token token = new Token();</span>
+<span class="fc" id="L41">        token.applyEvents(events);</span>
+<span class="fc" id="L42">        return token;</span>
+    }
+
+<span class="fc" id="L45">    public Token() {</span>
+<span class="fc" id="L46">        registerEventHandlers();</span>
+<span class="fc" id="L47">    }</span>
+
+    public void reserve() {
+<span class="fc" id="L50">        requireStatus(TokenStatus.State.ACTIVE);</span>
+<span class="fc" id="L51">        TokenReserved event = new TokenReserved(requireAccountId(), requireTokenId());</span>
+<span class="fc" id="L52">        apply(event);</span>
+<span class="fc" id="L53">        appliedEvents.add(event);</span>
+<span class="fc" id="L54">    }</span>
+
+    public void release() {
+<span class="fc" id="L57">        requireStatus(TokenStatus.State.RESERVED);</span>
+<span class="fc" id="L58">        TokenReleased event = new TokenReleased(requireAccountId(), requireTokenId());</span>
+<span class="fc" id="L59">        apply(event);</span>
+<span class="fc" id="L60">        appliedEvents.add(event);</span>
+<span class="fc" id="L61">    }</span>
+
+    public void consume() {
+<span class="fc" id="L64">        requireStatus(TokenStatus.State.RESERVED);</span>
+<span class="fc" id="L65">        TokenConsumed event = new TokenConsumed(requireAccountId(), requireTokenId());</span>
+<span class="fc" id="L66">        apply(event);</span>
+<span class="fc" id="L67">        appliedEvents.add(event);</span>
+<span class="fc" id="L68">    }</span>
+
+    public void invalidate() {
+<span class="pc bpc" id="L71" title="2 of 4 branches missed.">        if (status != null &amp;&amp; status.getState() == TokenStatus.State.CONSUMED) {</span>
+<span class="nc" id="L72">            throw new IllegalStateException(&quot;Token is already consumed&quot;);</span>
+        }
+<span class="fc" id="L74">        TokenInvalidated event = new TokenInvalidated(requireAccountId(), requireTokenId());</span>
+<span class="fc" id="L75">        apply(event);</span>
+<span class="fc" id="L76">        appliedEvents.add(event);</span>
+<span class="fc" id="L77">    }</span>
+
+    public List&lt;Event&gt; getAppliedEvents() {
+<span class="fc" id="L80">        return appliedEvents;</span>
+    }
+
+    public void clearAppliedEvents() {
+<span class="fc" id="L84">        appliedEvents.clear();</span>
+<span class="fc" id="L85">    }</span>
+
+    private void registerEventHandlers() {
+<span class="fc" id="L88">        handlers.put(TokenIssued.class, e -&gt; apply((TokenIssued) e));</span>
+<span class="fc" id="L89">        handlers.put(TokenReserved.class, e -&gt; apply((TokenReserved) e));</span>
+<span class="fc" id="L90">        handlers.put(TokenReleased.class, e -&gt; apply((TokenReleased) e));</span>
+<span class="pc" id="L91">        handlers.put(TokenConsumed.class, e -&gt; apply((TokenConsumed) e));</span>
+<span class="pc" id="L92">        handlers.put(TokenInvalidated.class, e -&gt; apply((TokenInvalidated) e));</span>
+<span class="fc" id="L93">    }</span>
+
+    private void applyEvents(Stream&lt;Event&gt; events) {
+<span class="fc" id="L96">        events.forEachOrdered(this::applyEvent);</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">        if (tokenId == null) {</span>
+<span class="nc" id="L98">            throw new Error(&quot;token does not exist&quot;);</span>
+        }
+<span class="fc" id="L100">    }</span>
+
+    private void applyEvent(Event e) {
+<span class="fc" id="L103">        handlers.getOrDefault(e.getClass(), this::missingHandler).accept(e);</span>
+<span class="fc" id="L104">    }</span>
+
+    private void missingHandler(Event e) {
+<span class="nc" id="L107">        throw new Error(&quot;handler for event &quot; + e + &quot; missing&quot;);</span>
+    }
+
+    private void apply(TokenIssued event) {
+<span class="fc" id="L111">        accountId = ensureAccountId(accountId, event.getAccountId());</span>
+<span class="fc" id="L112">        tokenId = ensureTokenId(tokenId, event.getTokenId());</span>
+<span class="fc" id="L113">        status = TokenStatus.active();</span>
+<span class="fc" id="L114">    }</span>
+
+    private void apply(TokenReserved event) {
+<span class="fc" id="L117">        accountId = ensureAccountId(accountId, event.getAccountId());</span>
+<span class="fc" id="L118">        tokenId = ensureTokenId(tokenId, event.getTokenId());</span>
+<span class="fc" id="L119">        status = TokenStatus.reserved();</span>
+<span class="fc" id="L120">    }</span>
+
+    private void apply(TokenReleased event) {
+<span class="fc" id="L123">        accountId = ensureAccountId(accountId, event.getAccountId());</span>
+<span class="fc" id="L124">        tokenId = ensureTokenId(tokenId, event.getTokenId());</span>
+<span class="fc" id="L125">        status = TokenStatus.active();</span>
+<span class="fc" id="L126">    }</span>
+
+    private void apply(TokenConsumed event) {
+<span class="fc" id="L129">        accountId = ensureAccountId(accountId, event.getAccountId());</span>
+<span class="fc" id="L130">        tokenId = ensureTokenId(tokenId, event.getTokenId());</span>
+<span class="fc" id="L131">        status = TokenStatus.consumed();</span>
+<span class="fc" id="L132">    }</span>
+
+    private void apply(TokenInvalidated event) {
+<span class="fc" id="L135">        accountId = ensureAccountId(accountId, event.getAccountId());</span>
+<span class="fc" id="L136">        tokenId = ensureTokenId(tokenId, event.getTokenId());</span>
+<span class="fc" id="L137">        status = TokenStatus.invalidated();</span>
+<span class="fc" id="L138">    }</span>
+
+    private void requireStatus(TokenStatus.State expected) {
+<span class="pc bpc" id="L141" title="2 of 4 branches missed.">        if (status == null || status.getState() != expected) {</span>
+<span class="nc" id="L142">            throw new IllegalStateException(&quot;Token is not &quot; + expected.name().toLowerCase());</span>
+        }
+<span class="fc" id="L144">    }</span>
+
+    private AccountId requireAccountId() {
+<span class="pc bpc" id="L147" title="1 of 2 branches missed.">        if (accountId == null) {</span>
+<span class="nc" id="L148">            throw new IllegalStateException(&quot;Token owner is not set&quot;);</span>
+        }
+<span class="fc" id="L150">        return accountId;</span>
+    }
+
+    private TokenId requireTokenId() {
+<span class="pc bpc" id="L154" title="1 of 2 branches missed.">        if (tokenId == null) {</span>
+<span class="nc" id="L155">            throw new IllegalStateException(&quot;Token id is not set&quot;);</span>
+        }
+<span class="fc" id="L157">        return tokenId;</span>
+    }
+
+    private AccountId ensureAccountId(AccountId current, AccountId next) {
+<span class="fc bfc" id="L161" title="All 2 branches covered.">        if (current == null) {</span>
+<span class="fc" id="L162">            return next;</span>
+        }
+<span class="pc bpc" id="L164" title="1 of 2 branches missed.">        if (!current.equals(next)) {</span>
+<span class="nc" id="L165">            throw new IllegalStateException(&quot;Token owner mismatch&quot;);</span>
+        }
+<span class="fc" id="L167">        return current;</span>
+    }
+
+    private TokenId ensureTokenId(TokenId current, TokenId next) {
+<span class="fc bfc" id="L171" title="All 2 branches covered.">        if (current == null) {</span>
+<span class="fc" id="L172">            return next;</span>
+        }
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">        if (!current.equals(next)) {</span>
+<span class="nc" id="L175">            throw new IllegalStateException(&quot;Token id mismatch&quot;);</span>
+        }
+<span class="fc" id="L177">        return current;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

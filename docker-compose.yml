@@ -1,0 +1,153 @@
+services:
+    rabbitmq:
+        image: rabbitmq:management
+        container_name: rabbitmq
+        ports:
+            - "5672:5672"
+            - "15672:15672"
+        environment:
+            # Allow guest connections from other containers (dev-friendly).
+            - RABBITMQ_DEFAULT_USER=guest
+            - RABBITMQ_DEFAULT_PASS=guest
+            - RABBITMQ_LOOPBACK_USERS=none
+        healthcheck:
+            test: rabbitmq-diagnostics check_port_connectivity
+            interval: 3s
+            timeout: 3s
+            retries: 30
+        
+    payment-manager:
+        build:
+            context: ./services/payment-manager
+            dockerfile: Dockerfile
+        container_name: payment-manager
+        environment:
+            - RABBITMQ_HOST=rabbitmq
+            - RABBITMQ_PORT=5672
+            - RABBITMQ_USER=guest
+            - RABBITMQ_PASS=guest
+            - JAVA_TOOL_OPTIONS=-javaagent:/opt/jacocoagent.jar=destfile=/jacoco/jacoco.exec,append=true,output=file
+        volumes:
+            - ./services/payment-manager/target:/jacoco
+        depends_on:
+            rabbitmq:
+                condition: service_healthy
+
+    account-manager:
+        build:
+            context: ./services/account-manager
+            dockerfile: Dockerfile
+        container_name: account-manager
+        environment:
+            - RABBITMQ_HOST=rabbitmq
+            - RABBITMQ_PORT=5672
+            - RABBITMQ_USER=guest
+            - RABBITMQ_PASS=guest
+            - JAVA_TOOL_OPTIONS=-javaagent:/opt/jacocoagent.jar=destfile=/jacoco/jacoco.exec,append=true,output=file
+        volumes:
+            - ./services/account-manager/target:/jacoco
+        depends_on:
+            rabbitmq:
+                condition: service_healthy
+
+    customer-facade:
+        build:
+            context: ./services/customer-facade
+            dockerfile: Dockerfile
+        container_name: customer-facade
+        ports:
+            - "8081:8080"
+        environment:
+            - RABBITMQ_HOST=rabbitmq
+            - RABBITMQ_PORT=5672
+            - RABBITMQ_USER=guest
+            - RABBITMQ_PASS=guest
+        volumes:
+            - ./services/customer-facade/target:/jacoco
+        depends_on:
+            rabbitmq:
+                condition: service_healthy
+    manager-facade:
+            build:
+                context: ./services/manager-facade
+                dockerfile: Dockerfile
+            container_name: manager-facade
+            ports:
+                - "8082:8080"
+            environment:
+                - RABBITMQ_HOST=rabbitmq
+                - RABBITMQ_PORT=5672
+                - RABBITMQ_USER=guest
+                - RABBITMQ_PASS=guest
+            volumes:
+                - ./services/manager-facade/target:/jacoco
+            depends_on:
+                rabbitmq:
+                    condition: service_healthy
+    token-manager:
+        build:
+            context: ./services/token-manager
+            dockerfile: Dockerfile
+        container_name: token-manager
+        environment:
+            - RABBITMQ_HOST=rabbitmq
+            - RABBITMQ_PORT=5672
+            - RABBITMQ_USER=guest
+            - RABBITMQ_PASS=guest
+            - JAVA_TOOL_OPTIONS=-javaagent:/opt/jacocoagent.jar=destfile=/jacoco/jacoco.exec,append=true,output=file
+        volumes:
+            - ./services/token-manager/target:/jacoco
+        depends_on:
+            rabbitmq:
+                condition: service_healthy
+
+    merchant-facade:
+        build:
+            context: ./services/merchant-facade
+            dockerfile: Dockerfile
+        container_name: merchant-facade
+        ports:
+            - "8080:8080"
+        environment:
+            - RABBITMQ_HOST=rabbitmq
+            - RABBITMQ_PORT=5672
+            - RABBITMQ_USER=guest
+            - RABBITMQ_PASS=guest
+        volumes:
+            - ./services/merchant-facade/target:/jacoco
+        depends_on:
+            rabbitmq:
+                condition: service_healthy
+    
+    report-manager:
+        build:
+            context: ./services/report-manager
+            dockerfile: Dockerfile
+        container_name: report-manager
+        environment:
+            - RABBITMQ_HOST=rabbitmq
+            - RABBITMQ_PORT=5672
+            - RABBITMQ_USER=guest
+            - RABBITMQ_PASS=guest
+            - JAVA_TOOL_OPTIONS=-javaagent:/opt/jacocoagent.jar=destfile=/jacoco/jacoco.exec,append=true,output=file
+        volumes:
+            - ./services/report-manager/target:/jacoco
+        depends_on:
+            rabbitmq:
+                condition: service_healthy
+
+    bank-manager:
+        build:
+            context: ./services/bank-manager
+            dockerfile: Dockerfile
+        container_name: bank-manager
+        environment:
+            - RABBITMQ_HOST=rabbitmq
+            - RABBITMQ_PORT=5672
+            - RABBITMQ_USER=guest
+            - RABBITMQ_PASS=guest
+        volumes:
+            - ./services/bank-manager/target:/jacoco
+        depends_on:
+            rabbitmq:
+                condition: service_healthy

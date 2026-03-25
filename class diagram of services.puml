@@ -1,0 +1,138 @@
+@startuml services
+
+skinparam packageStyle rectangle
+
+package account-manager {
+  class AccountManagerService {
+  -queue: MessageQueue
+  -customers: HashMap<String, Customer>
+  -merchants: HashMap<String, Merchant>
+  +policyCustomerRegistrationRequested(Event): void
+  +policyMerchantRegistrationRequested(Event): void
+  +policyGetCustomerRequested(Event): void
+  
+  }
+  record Customer {
+  cpr: String
+  firstName: String
+  lastName: String
+  customerBankId: String
+}
+  record Merchant {
+  cpr: String
+  firstName: String
+  lastName: String
+  merchantBankId: String
+  }
+  class StartUp {
+  +main(): void
+  -startUp(): void
+  }
+  
+  AccountManagerService --> Customer
+AccountManagerService --> Merchant
+StartUp --> AccountManagerService
+}
+
+
+
+package payment-manager {
+  class PaymentService{
+  -queue: MessageQueue
+  -payment: Payment
+  -paymentList: HashMap<String, Payment>
+  -policyPaymentRequested(Event): void
+  -policyTokenValidated(Event): void
+  -policyTransferSuceeded(Event): void
+  -policyFailed(Event): void
+  -policyBankAccountDetailsProvided(Event): void
+  -handleTokenInvalid(Event):void 
+  -handlePaymentListRequested(Event): void
+  -handleCustomerPaymentListRequested(Event): void
+  -handleMerchantPaymentListRequested(Event): void
+  
+  }
+  record Payment {
+  token: String
+  merchantId: String
+  customerId: String
+  amount: int
+  }
+  class StartUp {
+  +main(): void
+  -startUp(): void
+  }
+  
+  StartUp -->PaymentService
+  PaymentService --> Payment
+
+}
+
+
+package report-manager {
+  class ReportManagerService {
+  -queue: MessageQueue
+  -handleGetAllReportRequested(Event): void
+  -handleGetCustomerReportRequested(Event): void
+  -handleGetMerchantReportRequested(Event): void
+  -handlePaymentListReceived(Event): void
+  -handleCustomerPaymentListReceived(Event): void
+  -handleMerchantPaymentListReceived(Event): void
+  -_filteredPaymentListByCostumer(HashMap<String, Payment>): HashMap<String, Payment>
+  -_filteredPaymentListByMerchant(HashMap<String, Payment>): HashMap<String, Payment>
+  -_extractPaymentList(Object): HashMap<String, Payment>
+
+  }
+  record Payment {
+  token: String
+  merchantId: String
+  customerId: String
+  amount: int
+  }
+  
+  ReportManagerService --> Payment
+}
+
+package token-manager {
+  class TokenService {
+  -queue: MessageQueue
+  -repository: TokenRepository
+  -handleRequestPaymentTokens(Event): void
+  -handleValidateTokenRequested(Event): void
+  -handleConsumeTokenRequested(Event): void
+  -handleGetCustomerTokensRequested(Event): void
+  -publishRequestRejected(String, UUID, String): void
+  -parseCustomerId(String): UUID
+  }
+  class StartUp {
+  +main(): void
+  -startUp(): void
+  }
+  class TokenRepository {
+  -tokensByCustomer: HashMap<UUID, List<String>>
+  -tokenOwners: HashMap<String, UUID>
+  +createTokens(UUID, int): List<String>
+  +hasActiveTokens(UUID): boolean
+  +getTokens(UUID): List<String>
+  +findOwner(String): Optional<UUID>
+  +consumeToken(String): boolean
+  -generateUniqueToken(): String
+  }
+  
+  StartUp --> TokenService
+  TokenService --> TokenRepository
+}
+
+package messaging-utilities {
+  interface MessageQueue {
+  publish(Event): void
+  addHandler(String, Consumer<Event>): void
+  }
+}
+
+MessageQueue -- AccountManagerService
+MessageQueue -- PaymentService
+MessageQueue -- ReportManagerService
+MessageQueue -- TokenService
+
+@enduml

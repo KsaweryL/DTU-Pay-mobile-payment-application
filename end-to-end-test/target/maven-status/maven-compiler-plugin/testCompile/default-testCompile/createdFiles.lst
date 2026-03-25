@@ -1,0 +1,8 @@
+steps/DTUPayRegisterSteps.class
+steps/ReportSteps.class
+steps/Context.class
+steps/PaymentSteps.class
+steps/SOAPPaymentSteps.class
+steps/Hooks.class
+steps/TokenRequestSteps.class
+CucumberTest.class

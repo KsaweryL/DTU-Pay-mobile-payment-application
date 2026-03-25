@@ -1,0 +1,160 @@
+@startuml microservices
+
+skinparam packageStyle rectangle
+left to right direction
+
+package "messaging-utilities" {
+  interface MessageQueue {
+    +publish(Event): void
+    +addHandler(String, Consumer<Event>): void
+  }
+}
+
+package "account-manager" {
+  class StartUp
+  class AccountManagerService
+  class Customer
+  class Merchant
+  class BankAccount
+  class AccountId
+  class CustomerRepository
+  class MerchantRepository
+  class ReadModelRepository
+  class EventStore
+  class ConcurrentIdState
+
+  StartUp --> AccountManagerService
+  AccountManagerService --> MessageQueue
+  AccountManagerService --> CustomerRepository
+  AccountManagerService --> MerchantRepository
+  AccountManagerService --> ReadModelRepository
+  AccountManagerService ..> ConcurrentIdState
+
+  CustomerRepository --> EventStore
+  MerchantRepository --> EventStore
+  ReadModelRepository --> EventStore
+  CustomerRepository --> Customer
+  MerchantRepository --> Merchant
+  Customer --> BankAccount
+  Merchant --> BankAccount
+  Customer --> AccountId
+  Merchant --> AccountId
+}
+
+package "payment-manager" {
+  class StartUp
+  class PaymentService
+  class Payment
+  class PaymentId
+  class AccountId
+  class PaymentRepository
+  class PaymentReadModelRepository
+  class EventStore
+  class ConcurrentIdState
+
+  StartUp --> PaymentService
+  PaymentService --> MessageQueue
+  PaymentService --> PaymentRepository
+  PaymentService --> PaymentReadModelRepository
+  PaymentService ..> ConcurrentIdState
+
+  PaymentRepository --> EventStore
+  PaymentReadModelRepository --> EventStore
+  PaymentRepository --> Payment
+  PaymentReadModelRepository --> Payment
+  Payment --> PaymentId
+  Payment --> AccountId
+}
+
+package "report-manager" {
+  class StartUp
+  class ReportManagerService
+  class ReportHistoryEntry
+  class ReportType
+  class ReportRepository
+  class ReadModelRepository
+  class EventStore
+  class Report
+  class MetaData
+  class AccountId
+
+  StartUp --> ReportManagerService
+  ReportManagerService --> MessageQueue
+  ReportManagerService --> ReportHistoryEntry
+  ReportHistoryEntry --> ReportType
+
+  ReportRepository --> EventStore
+  ReadModelRepository --> EventStore
+  ReportRepository --> Report
+  Report --> MetaData
+  Report --> AccountId
+}
+
+package "token-manager" {
+  class StartUp
+  class TokenService
+  class TokenManagerService
+  class TokenRepository
+  class ReadModelRepository
+  class EventStore
+  class Token
+  class TokenId
+  class AccountId
+  class TokenStatus
+
+  StartUp --> TokenService
+  TokenService --> MessageQueue
+  TokenService --> TokenManagerService
+  TokenManagerService --> TokenRepository
+  TokenManagerService --> ReadModelRepository
+
+  TokenRepository --> EventStore
+  ReadModelRepository --> EventStore
+  TokenRepository --> Token
+  Token --> TokenId
+  Token --> AccountId
+  Token --> TokenStatus
+}
+
+package "bank-manager" {
+  class BankManagerService
+  class BankService <<external>>
+
+  BankManagerService --> MessageQueue
+  BankManagerService ..> BankService
+}
+
+package "customer-facade" {
+  class CustomerFacadeResource
+  class CustomerFacadeService
+  class Customer
+  class TokenRequest
+  class AccountId
+
+  CustomerFacadeResource --> CustomerFacadeService
+  CustomerFacadeService --> MessageQueue
+  CustomerFacadeResource --> Customer
+}
+
+package "merchant-facade" {
+  class MerchantFacadeResource
+  class MerchantFacadeService
+  class Merchant
+  class PaymentRequest
+  class AccountId
+
+  MerchantFacadeResource --> MerchantFacadeService
+  MerchantFacadeService --> MessageQueue
+  MerchantFacadeResource --> Merchant
+  MerchantFacadeResource --> PaymentRequest
+}
+
+package "manager-facade" {
+  class ManagerFacadeResource
+  class ManagerFacadeService
+
+  ManagerFacadeResource --> ManagerFacadeService
+  ManagerFacadeService --> MessageQueue
+}
+
+@enduml

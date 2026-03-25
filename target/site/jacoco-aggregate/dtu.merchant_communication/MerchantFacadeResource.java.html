@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MerchantFacadeResource.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">JaCoCo Coverage Report</a> &gt; <a href="index.source.html" class="el_package">dtu.merchant_communication</a> &gt; <span class="el_source">MerchantFacadeResource.java</span></div><h1>MerchantFacadeResource.java</h1><pre class="source lang-java linenums">package dtu.merchant_communication;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+
+@Path(&quot;/merchant&quot;)
+<span class="fc" id="L14">public class MerchantFacadeResource {</span>
+
+	@Inject
+	MerchantFacadeService service;
+
+	@POST
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.TEXT_PLAIN) 
+	public String registerMerchant(Merchant m) {
+<span class="fc" id="L23">		return service.registerMerchant(m);</span>
+	}
+
+	@Path(&quot;pay&quot;)
+	@POST
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.TEXT_PLAIN) 
+	public String pay(PaymentRequest request) {
+<span class="fc" id="L31">		return service.pay(request.amount(), request.merchantID(), request.token());</span>
+	}
+
+	@Path(&quot;{merchantId}&quot;)
+	@DELETE
+	// @Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.TEXT_PLAIN) 
+	public String deregisterMerchant(@PathParam(&quot;merchantId&quot;) String p) {
+<span class="fc" id="L39">		return service.deregisterMerchant(p);</span>
+	}
+
+	@Path(&quot;{merchantId}/report&quot;)
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	public String getMerchantReport(@PathParam(&quot;merchantId&quot;) String merchantId) {
+<span class="fc" id="L46">		return service.getMerchantReport(merchantId);</span>
+	}
+
+	@Path(&quot;{merchantId}/report/history&quot;)
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	public String getMerchantReportHistory(@PathParam(&quot;merchantId&quot;) String merchantId) {
+<span class="fc" id="L53">		return service.getMerchantReportHistory(merchantId);</span>
+	}
+
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

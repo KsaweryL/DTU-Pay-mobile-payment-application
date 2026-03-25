@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AccountManagerService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">JaCoCo Coverage Report</a> &gt; <a href="index.source.html" class="el_package">dtu.businesslogic</a> &gt; <span class="el_source">AccountManagerService.java</span></div><h1>AccountManagerService.java</h1><pre class="source lang-java linenums">package dtu.businesslogic;
+
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
+
+import dtu.aggregate.AccountId;
+import dtu.aggregate.ConcurrentIdState;
+import dtu.aggregate.Customer;
+import dtu.aggregate.Merchant;
+import dtu.repositories.CustomerRepository;
+import dtu.repositories.MerchantRepository;
+import dtu.repositories.ReadModelRepository;
+import messaging.Event;
+import messaging.MessageQueue;
+
+public class AccountManagerService {
+
+	private MessageQueue queue;
+
+	private CustomerRepository customerRepository;
+	private MerchantRepository merchantRepository;
+	private ReadModelRepository readRepository;
+<span class="fc" id="L23">	private final ConcurrentHashMap&lt;String, ConcurrentIdState&gt; pendingIdValidations = new ConcurrentHashMap&lt;&gt;();</span>
+
+<span class="fc" id="L25">	public AccountManagerService(MessageQueue q) {</span>
+<span class="fc" id="L26">		queue = q;</span>
+<span class="fc" id="L27">		customerRepository = new CustomerRepository(q);</span>
+<span class="fc" id="L28">		merchantRepository = new MerchantRepository(q);</span>
+<span class="fc" id="L29">		readRepository = new ReadModelRepository(q);</span>
+<span class="fc" id="L30">		queue.addHandler(&quot;CustomerRegistrationRequested&quot;, this::policyCustomerRegistrationRequested);</span>
+<span class="fc" id="L31">		queue.addHandler(&quot;CustomerDeRegistrationRequested&quot;, this::commandCustomerDeregisteredRequest);</span>
+<span class="fc" id="L32">		queue.addHandler(&quot;MerchantRegistrationRequested&quot;, this::policyMerchantRegistrationRequested);</span>
+<span class="fc" id="L33">		queue.addHandler(&quot;MerchantDeRegistrationRequested&quot;, this::commandMerchantDeregisteredRequest);</span>
+<span class="fc" id="L34">		queue.addHandler(&quot;MerchantDeregisteredRequest&quot;, this::commandMerchantDeregisteredRequest);</span>
+
+<span class="fc" id="L36">		queue.addHandler(&quot;ValidateMidRequest&quot;, this::commandValidateMidRequest);</span>
+<span class="fc" id="L37">		queue.addHandler(&quot;ValidateCidRequest&quot;, this::commandValidateCidRequest);</span>
+<span class="fc" id="L38">	}</span>
+
+	public void policyCustomerRegistrationRequested(Event event) {
+<span class="fc" id="L41">		String correlationId = event.getArgument(0, String.class);</span>
+<span class="fc" id="L42">		String cpr = event.getArgument(1, String.class);</span>
+<span class="fc" id="L43">		String firstName = event.getArgument(2, String.class);</span>
+<span class="fc" id="L44">		String lastName = event.getArgument(3, String.class);</span>
+<span class="fc" id="L45">		String bankId = event.getArgument(4, String.class);</span>
+
+<span class="fc" id="L47">		AccountId existingAccountId = readRepository.getAccountIdFromCpr(cpr);</span>
+<span class="fc bfc" id="L48" title="All 2 branches covered.">		if (existingAccountId != null) {</span>
+<span class="fc" id="L49">			queue.publish(new Event(&quot;CustomerRegistrationFailed&quot;, correlationId,</span>
+					&quot;Customer is already registered with DTU Pay&quot;));
+<span class="fc" id="L51">			return;</span>
+		}
+
+<span class="fc" id="L54">		commandRegisterCustomer(correlationId, firstName, lastName, cpr, bankId);</span>
+<span class="fc" id="L55">	}</span>
+
+	public void policyMerchantRegistrationRequested(Event event) {
+<span class="fc" id="L58">		String correlationId = event.getArgument(0, String.class);</span>
+<span class="fc" id="L59">		String cpr = event.getArgument(1, String.class);</span>
+<span class="fc" id="L60">		String firstName = event.getArgument(2, String.class);</span>
+<span class="fc" id="L61">		String lastName = event.getArgument(3, String.class);</span>
+<span class="fc" id="L62">		String bankId = event.getArgument(4, String.class);</span>
+
+<span class="fc" id="L64">		AccountId existingAccountId = readRepository.getMerchantAccountIdFromCpr(cpr);</span>
+<span class="fc bfc" id="L65" title="All 2 branches covered.">		if (existingAccountId != null) {</span>
+<span class="fc" id="L66">			queue.publish(new Event(&quot;MerchantRegistrationFailed&quot;, correlationId,</span>
+					&quot;Merchant is already registered with DTU Pay&quot;));
+<span class="fc" id="L68">			return;</span>
+		}
+
+<span class="fc" id="L71">		commandRegisterMerchant(correlationId, firstName, lastName, cpr, bankId);</span>
+<span class="fc" id="L72">	}</span>
+
+
+	public void commandMerchantDeregisteredRequest(Event event) {
+<span class="fc" id="L76">		String correlationId = event.getArgument(0, String.class);</span>
+<span class="fc" id="L77">		String accountId = event.getArgument(1, String.class);</span>
+
+<span class="fc" id="L79">		Merchant merchant = merchantRepository.getById(new AccountId(UUID.fromString(accountId)));</span>
+<span class="fc" id="L80">		merchant.delete(correlationId);</span>
+<span class="fc" id="L81">		merchantRepository.save(merchant);</span>
+<span class="fc" id="L82">	}</span>
+
+	public void commandCustomerDeregisteredRequest(Event event) {
+<span class="fc" id="L85">		String correlationId = event.getArgument(0, String.class);</span>
+<span class="fc" id="L86">		String accountId = event.getArgument(1, String.class);</span>
+
+<span class="fc" id="L88">		Customer customer = customerRepository.getById(new AccountId(UUID.fromString(accountId)));</span>
+<span class="fc" id="L89">		customer.delete(correlationId);</span>
+<span class="fc" id="L90">		customerRepository.save(customer);</span>
+<span class="fc" id="L91">	}</span>
+
+	private void commandValidateMidRequest(Event event) {
+<span class="fc" id="L94">		String correlationId = event.getArgument(0, String.class);</span>
+<span class="fc" id="L95">		String merchantId = event.getArgument(1, String.class);</span>
+
+		// Merchant merchant = merchantRepository.getById(new
+		// AccountId(UUID.fromString(merchantId)));
+		// if (merchant == null) {
+		// pendingIdValidations.remove(correlationId);
+		// queue.publish(new Event(&quot;BankAccountDetailsFailed&quot;, correlationId, &quot;Invalid
+		// merchant id&quot;));
+		// return;
+		// }
+
+<span class="fc" id="L106">		updateValidationState(correlationId, state -&gt; {</span>
+<span class="fc" id="L107">			state.merchantId = merchantId;</span>
+<span class="fc" id="L108">		});</span>
+<span class="fc" id="L109">	}</span>
+
+	private void commandValidateCidRequest(Event event) {
+<span class="fc" id="L112">		String correlationId = event.getArgument(0, String.class);</span>
+<span class="fc" id="L113">		String customerId = event.getArgument(1, String.class);</span>
+
+		// Customer customer = customerRepository.getById(new
+		// AccountId(UUID.fromString(customerId)));
+		// if (customer == null) {
+		// pendingIdValidations.remove(correlationId);
+		// queue.publish(new Event(&quot;BankAccountDetailsFailed&quot;, correlationId, &quot;Invalid
+		// customer id&quot;));
+		// return;
+		// }
+
+<span class="fc" id="L124">		updateValidationState(correlationId, state -&gt; {</span>
+<span class="fc" id="L125">			state.customerId = customerId;</span>
+<span class="fc" id="L126">		});</span>
+<span class="fc" id="L127">	}</span>
+
+	private void commandRegisterCustomer(String correlationId, String firstName, String lastName, String cpr,
+			String bankId) {
+<span class="fc" id="L131">		Customer customer = Customer.create(correlationId, firstName, lastName, cpr, bankId);</span>
+<span class="fc" id="L132">		customerRepository.save(customer);</span>
+<span class="fc" id="L133">	}</span>
+
+	private void commandRegisterMerchant(String correlationId, String firstName, String lastName, String cpr,
+			String bankId) {
+<span class="fc" id="L137">		Merchant merchant = Merchant.create(correlationId, firstName, lastName, cpr, bankId);</span>
+<span class="fc" id="L138">		merchantRepository.save(merchant);</span>
+<span class="fc" id="L139">	}</span>
+
+	private void commandProvideBankAccountDetails(String correlationId, String merchantBankAccount,
+			String customerBankAccount) {
+<span class="nc" id="L143">		queue.publish(new Event(&quot;BankAccountDetailsProvided&quot;, correlationId, merchantBankAccount, customerBankAccount));</span>
+<span class="nc" id="L144">	}</span>
+
+	private void updateValidationState(String correlationId, java.util.function.Consumer&lt;ConcurrentIdState&gt; updater) {
+<span class="fc" id="L147">		ConcurrentIdState state = pendingIdValidations.computeIfAbsent(correlationId, id -&gt; new ConcurrentIdState());</span>
+<span class="fc" id="L148">		synchronized (state) {</span>
+<span class="fc" id="L149">			updater.accept(state);</span>
+<span class="fc bfc" id="L150" title="All 2 branches covered.">			if (state.isReady()) {</span>
+<span class="fc" id="L151">				pendingIdValidations.remove(correlationId);</span>
+<span class="fc" id="L152">				Customer customer = customerRepository.getById(new AccountId(UUID.fromString(state.customerId)));</span>
+<span class="fc" id="L153">				Merchant merchant = merchantRepository.getById(new AccountId(UUID.fromString(state.merchantId)));</span>
+<span class="pc bpc" id="L154" title="2 of 4 branches missed.">				if (customer == null || merchant == null) {</span>
+<span class="nc" id="L155">					queue.publish(new Event(&quot;BankAccountDetailsFailed&quot;, correlationId, &quot;Invalid customer or merchant&quot;));</span>
+<span class="nc" id="L156">					queue.publish(new Event(&quot;ReleaseTokenRequested&quot;, correlationId));</span>
+<span class="nc" id="L157">					queue.publish(new Event(&quot;PaymentFailed&quot;, correlationId, &quot;Invalid customer or merchant&quot;));</span>
+<span class="nc" id="L158">					return;</span>
+				}
+<span class="fc" id="L160">				queue.publish(new Event(</span>
+						&quot;BankAccountDetailsProvided&quot;,
+						correlationId,
+<span class="fc" id="L163">						merchant.getBankAccount().getId(),</span>
+<span class="fc" id="L164">						customer.getBankAccount().getId()));</span>
+			}
+<span class="fc" id="L166">		}</span>
+<span class="fc" id="L167">	}</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

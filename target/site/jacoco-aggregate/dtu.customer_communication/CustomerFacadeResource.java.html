@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CustomerFacadeResource.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">JaCoCo Coverage Report</a> &gt; <a href="index.source.html" class="el_package">dtu.customer_communication</a> &gt; <span class="el_source">CustomerFacadeResource.java</span></div><h1>CustomerFacadeResource.java</h1><pre class="source lang-java linenums">package dtu.customer_communication;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PUT;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
+
+@Path(&quot;/customer&quot;)
+<span class="fc" id="L16">public class CustomerFacadeResource {</span>
+
+	@Inject
+	CustomerFacadeService service;
+
+	@POST
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.TEXT_PLAIN) 
+	public String registerCustomer(Customer c) {
+<span class="fc" id="L25">		return service.registerCustomer(c);</span>
+	}
+
+	@Path(&quot;{customerId}&quot;)  
+	@DELETE
+	@Produces(MediaType.TEXT_PLAIN) 
+	public String deregisterCustomer(@PathParam(&quot;customerId&quot;) String cid) {
+<span class="fc" id="L32">		return service.deregisterCustomer(cid);</span>
+	}
+
+	@Path(&quot;{customerId}/tokens&quot;) 
+	@PUT
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Produces(MediaType.TEXT_PLAIN) 
+	public String getTokens(@PathParam(&quot;customerId&quot;) String customerId, @QueryParam(&quot;count&quot;) int numberOfTokens) {
+<span class="fc" id="L40">		return service.getTokens(customerId, numberOfTokens);</span>
+	}
+
+	@Path(&quot;{customerId}/report&quot;) 
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	public String getCustomerReport(@PathParam(&quot;customerId&quot;) String customerId) {
+<span class="fc" id="L47">		return service.getCustomerReport(customerId);</span>
+	}
+
+	@Path(&quot;{customerId}/report/history&quot;)
+	@GET
+	@Produces(MediaType.APPLICATION_JSON)
+	public String getCustomerReportHistory(@PathParam(&quot;customerId&quot;) String customerId) {
+<span class="fc" id="L54">		return service.getCustomerReportHistory(customerId);</span>
+	}
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

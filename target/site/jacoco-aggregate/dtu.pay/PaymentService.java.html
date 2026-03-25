@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>PaymentService.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">JaCoCo Coverage Report</a> &gt; <a href="index.source.html" class="el_package">dtu.pay</a> &gt; <span class="el_source">PaymentService.java</span></div><h1>PaymentService.java</h1><pre class="source lang-java linenums">package dtu.pay;
+
+import java.util.concurrent.ConcurrentHashMap;
+
+import dtu.pay.aggregate.AccountId;
+import dtu.pay.aggregate.ConcurrentIdState;
+import dtu.pay.aggregate.Payment;
+import dtu.pay.aggregate.PaymentId;
+import dtu.pay.repositories.PaymentReadModelRepository;
+import dtu.pay.repositories.PaymentRepository;
+import messaging.Event;
+import messaging.MessageQueue;
+
+public class PaymentService {
+
+    private final MessageQueue queue;
+    private final PaymentRepository paymentRepository;
+    private final PaymentReadModelRepository readModelRepository;
+<span class="fc" id="L19">    private final ConcurrentHashMap&lt;String, ConcurrentIdState&gt; pendingIdValidations = new ConcurrentHashMap&lt;&gt;();</span>
+
+<span class="fc" id="L21">    public PaymentService(MessageQueue queue) {</span>
+<span class="fc" id="L22">        this.queue = queue;</span>
+<span class="fc" id="L23">        this.paymentRepository = new PaymentRepository(queue);</span>
+<span class="fc" id="L24">        this.readModelRepository = new PaymentReadModelRepository(queue);</span>
+
+<span class="fc" id="L26">        queue.addHandler(&quot;TokenInvalid&quot;, this::commandTokenInvalid);</span>
+<span class="fc" id="L27">        queue.addHandler(&quot;TokenValidated&quot;, this::commandTokenValidated);</span>
+<span class="fc" id="L28">        queue.addHandler(&quot;PaymentCompleted&quot;, this::commandRecordPaymentCompleted);</span>
+<span class="fc" id="L29">        queue.addHandler(&quot;TransferFailed&quot;, this::commandHandleFailure);</span>
+
+<span class="fc" id="L31">        queue.addHandler(&quot;PaymentRequest&quot;, this::policyPaymentRequested);</span>
+<span class="fc" id="L32">        queue.addHandler(&quot;BankAccountDetailsProvided&quot;, this::commandBankAccountDetailsProvided);</span>
+<span class="fc" id="L33">        queue.addHandler(&quot;BankAccountDetailsFailed&quot;, this::commandHandleFailure);</span>
+
+<span class="fc" id="L35">        queue.addHandler(&quot;GetAllReportRequested&quot;, this::commandGetAllReportRequested);</span>
+<span class="fc" id="L36">        queue.addHandler(&quot;GetCustomerReportRequested&quot;, this::commandGetCustomerReportRequested);</span>
+<span class="fc" id="L37">        queue.addHandler(&quot;GetMerchantReportRequested&quot;, this::commandGetMerchantReportRequested);</span>
+<span class="fc" id="L38">    }</span>
+
+    private void commandHandleFailure(Event e) {
+<span class="fc" id="L41">        String correlationID = e.getArgument(0, String.class);</span>
+<span class="fc" id="L42">        String reason = e.getArgument(1, String.class);</span>
+<span class="fc" id="L43">        PaymentId paymentId = readModelRepository.getPendingPaymentId(correlationID);</span>
+<span class="pc bpc" id="L44" title="1 of 2 branches missed.">        if (paymentId != null) {</span>
+<span class="fc" id="L45">            Payment payment = paymentRepository.getById(paymentId);</span>
+<span class="fc" id="L46">            payment.markFailed(reason);</span>
+<span class="fc" id="L47">            paymentRepository.save(payment);</span>
+        }
+<span class="fc" id="L49">        pendingIdValidations.remove(correlationID);</span>
+<span class="fc" id="L50">    }</span>
+
+    private void commandTokenInvalid(Event e) {
+        String correlationId;
+        String reason;
+<span class="fc" id="L55">        correlationId = e.getArgument(0, String.class);</span>
+<span class="fc" id="L56">        reason = e.getArgument(1, String.class);</span>
+<span class="fc" id="L57">        PaymentId paymentId = readModelRepository.getPendingPaymentId(correlationId);</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">        if (paymentId != null) {</span>
+<span class="nc" id="L59">            Payment payment = paymentRepository.getById(paymentId);</span>
+<span class="nc" id="L60">            payment.markFailed(reason);</span>
+<span class="nc" id="L61">            paymentRepository.save(payment);</span>
+        }
+<span class="fc" id="L63">        pendingIdValidations.remove(correlationId);</span>
+<span class="fc" id="L64">        queue.publish(new Event(&quot;ReleaseTokenRequested&quot;, correlationId));</span>
+<span class="fc" id="L65">        queue.publish(new Event(&quot;PaymentFailed&quot;, correlationId, reason));</span>
+<span class="fc" id="L66">    }</span>
+
+    private void commandGetAllReportRequested(Event event) {
+<span class="fc" id="L69">        String correlationId = event.getArgument(0, String.class);</span>
+<span class="fc" id="L70">        queue.publish(new Event(&quot;FullReportRequested&quot;, correlationId, serializePayments(readModelRepository.getPayments())));</span>
+
+<span class="fc" id="L72">    }</span>
+
+    private void commandGetCustomerReportRequested(Event event) {
+<span class="fc" id="L75">        String correlationId = event.getArgument(0, String.class);</span>
+<span class="fc" id="L76">        String customerId = event.getArgument(1, String.class);</span>
+<span class="fc" id="L77">        queue.publish(new Event(&quot;CustomerFullReportReceived&quot;, correlationId,</span>
+<span class="fc" id="L78">                serializePayments(filteredPaymentsByCustomer(customerId))));</span>
+
+<span class="fc" id="L80">    }</span>
+
+    private void commandGetMerchantReportRequested(Event event) {
+<span class="fc" id="L83">        String correlationId = event.getArgument(0, String.class);</span>
+<span class="fc" id="L84">        String merchantId = event.getArgument(1, String.class);</span>
+<span class="fc" id="L85">        queue.publish(new Event(&quot;MerchantFullReportReceived&quot;, correlationId,</span>
+<span class="fc" id="L86">                serializePayments(filteredPaymentsByMerchant(merchantId))));</span>
+
+<span class="fc" id="L88">    }</span>
+
+    private void commandBankAccountDetailsProvided(Event e) {
+<span class="fc" id="L91">        String correlationID = e.getArgument(0, String.class);</span>
+<span class="fc" id="L92">        String merchantBankAccount = e.getArgument(1, String.class);</span>
+<span class="fc" id="L93">        String customerBankAccount = e.getArgument(2, String.class);</span>
+<span class="fc" id="L94">        updatePaymentState(correlationID, state -&gt; {</span>
+<span class="fc" id="L95">            state.BankCustomerId = customerBankAccount;</span>
+<span class="fc" id="L96">            state.BankMerchantId = merchantBankAccount;</span>
+<span class="fc" id="L97">        });</span>
+<span class="fc" id="L98">    }</span>
+
+    private void policyPaymentRequested(Event e) {
+<span class="fc" id="L101">        String correlationID = e.getArgument(0, String.class);</span>
+<span class="fc" id="L102">        Number amountNumber = e.getArgument(1, Number.class);</span>
+<span class="fc" id="L103">        int amount = amountNumber.intValue();</span>
+<span class="fc" id="L104">        String merchantId = e.getArgument(2, String.class);</span>
+<span class="fc" id="L105">        String token = e.getArgument(3, String.class);</span>
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        if (amount &lt;= 0) {</span>
+<span class="fc" id="L107">            queue.publish(new Event(&quot;PaymentFailed&quot;, correlationID, &quot;Amount needs to be positive&quot;));</span>
+<span class="fc" id="L108">            queue.publish(new Event(&quot;ReleaseTokenRequested&quot;, correlationID));</span>
+<span class="fc" id="L109">            return;</span>
+        }
+
+<span class="fc" id="L112">        commandCreatePayment(correlationID, amount, merchantId, token);</span>
+<span class="fc" id="L113">    }</span>
+
+    private void updatePaymentState(String correlationId, java.util.function.Consumer&lt;ConcurrentIdState&gt; updater) {
+<span class="fc" id="L116">        ConcurrentIdState state = pendingIdValidations.computeIfAbsent(correlationId, id -&gt; new ConcurrentIdState());</span>
+<span class="fc" id="L117">        synchronized (state) {</span>
+<span class="fc" id="L118">            updater.accept(state);</span>
+<span class="pc bpc" id="L119" title="1 of 4 branches missed.">            if (state.isReady() &amp;&amp; !state.transferRequested) {</span>
+<span class="fc" id="L120">                state.transferRequested = true;</span>
+<span class="fc" id="L121">                queue.publish(new Event(&quot;TransferRequested&quot;, correlationId,</span>
+                        state.BankMerchantId, state.BankCustomerId,
+<span class="fc" id="L123">                        state.amount));</span>
+            }
+<span class="fc" id="L125">        }</span>
+<span class="fc" id="L126">    }</span>
+
+    private void commandTokenValidated(Event e) {
+<span class="fc" id="L129">        String correlationId = e.getArgument(0, String.class);</span>
+<span class="fc" id="L130">        String customerId = e.getArgument(1, String.class);</span>
+<span class="fc" id="L131">        PaymentId paymentId = readModelRepository.getPendingPaymentId(correlationId);</span>
+<span class="fc bfc" id="L132" title="All 2 branches covered.">        if (paymentId == null) {</span>
+<span class="fc" id="L133">            ConcurrentIdState state = pendingIdValidations.get(correlationId);</span>
+<span class="fc bfc" id="L134" title="All 2 branches covered.">            if (state != null) {</span>
+<span class="fc" id="L135">                paymentId = state.paymentId;</span>
+            }
+        }
+<span class="fc bfc" id="L138" title="All 2 branches covered.">        if (paymentId != null) {</span>
+<span class="fc" id="L139">            Payment payment = paymentRepository.getById(paymentId);</span>
+<span class="pc bpc" id="L140" title="1 of 2 branches missed.">            if (payment.getCustomerId() == null) {</span>
+<span class="fc" id="L141">                payment.assignCustomer(AccountId.fromString(customerId));</span>
+<span class="fc" id="L142">                paymentRepository.save(payment);</span>
+            }
+        }
+<span class="fc" id="L145">        updatePaymentState(correlationId, state -&gt; state.customerId = customerId);</span>
+<span class="fc" id="L146">    }</span>
+
+    private void commandRecordPaymentCompleted(Event e) {
+<span class="fc" id="L149">        String correlationId = e.getArgument(0, String.class);</span>
+<span class="fc" id="L150">        PaymentId paymentId = readModelRepository.getPendingPaymentId(correlationId);</span>
+<span class="pc bpc" id="L151" title="1 of 2 branches missed.">        if (paymentId == null) {</span>
+<span class="nc" id="L152">            ConcurrentIdState state = pendingIdValidations.get(correlationId);</span>
+<span class="nc bnc" id="L153" title="All 2 branches missed.">            if (state != null) {</span>
+<span class="nc" id="L154">                paymentId = state.paymentId;</span>
+            }
+        }
+<span class="pc bpc" id="L157" title="1 of 2 branches missed.">        if (paymentId == null) {</span>
+<span class="nc" id="L158">            pendingIdValidations.remove(correlationId);</span>
+<span class="nc" id="L159">            return;</span>
+        }
+<span class="fc" id="L161">        Payment payment = paymentRepository.getById(paymentId);</span>
+<span class="fc" id="L162">        payment.markCompleted(correlationId);</span>
+<span class="fc" id="L163">        paymentRepository.save(payment);</span>
+<span class="fc" id="L164">        pendingIdValidations.remove(correlationId);</span>
+<span class="fc" id="L165">    }</span>
+
+    private void commandCreatePayment(String correlationId, int amount, String merchantId, String token) {
+        PaymentId paymentId;
+        try {
+<span class="fc" id="L170">            Payment payment = Payment.initiate(correlationId, token, merchantId, null, amount);</span>
+<span class="fc" id="L171">            paymentRepository.save(payment);</span>
+<span class="fc" id="L172">            paymentId = payment.getPaymentId();</span>
+<span class="fc" id="L173">            ConcurrentIdState state = pendingIdValidations.get(correlationId);</span>
+<span class="pc bpc" id="L174" title="1 of 4 branches missed.">            if (state != null &amp;&amp; state.customerId != null) {</span>
+<span class="fc" id="L175">                payment.assignCustomer(AccountId.fromString(state.customerId));</span>
+<span class="fc" id="L176">                paymentRepository.save(payment);</span>
+            }
+<span class="nc" id="L178">        } catch (IllegalArgumentException ex) {</span>
+<span class="nc" id="L179">            queue.publish(new Event(&quot;PaymentFailed&quot;, correlationId, ex.getMessage()));</span>
+<span class="nc" id="L180">            queue.publish(new Event(&quot;ReleaseTokenRequested&quot;, correlationId));</span>
+<span class="nc" id="L181">            return;</span>
+<span class="fc" id="L182">        }</span>
+
+<span class="fc" id="L184">        updatePaymentState(correlationId, state -&gt; {</span>
+<span class="fc" id="L185">            state.hasAmount = true;</span>
+<span class="fc" id="L186">            state.amount = amount;</span>
+<span class="fc" id="L187">            state.paymentId = paymentId;</span>
+<span class="fc" id="L188">        });</span>
+<span class="fc" id="L189">    }</span>
+
+    private ConcurrentHashMap&lt;String, Payment&gt; filteredPaymentsByCustomer(String customerId) {
+<span class="fc" id="L192">        ConcurrentHashMap&lt;String, Payment&gt; customerPayments = new ConcurrentHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">        for (var entry : readModelRepository.getPayments().entrySet()) {</span>
+<span class="fc bfc" id="L194" title="All 2 branches covered.">            if (matchesAccount(entry.getValue().getCustomerId(), customerId)) {</span>
+<span class="fc" id="L195">                customerPayments.put(entry.getKey(), entry.getValue());</span>
+            }
+<span class="fc" id="L197">        }</span>
+<span class="fc" id="L198">        return customerPayments;</span>
+    }
+
+    private ConcurrentHashMap&lt;String, Payment&gt; filteredPaymentsByMerchant(String merchantId) {
+<span class="fc" id="L202">        ConcurrentHashMap&lt;String, Payment&gt; merchantPayments = new ConcurrentHashMap&lt;&gt;();</span>
+<span class="fc bfc" id="L203" title="All 2 branches covered.">        for (var entry : readModelRepository.getPayments().entrySet()) {</span>
+<span class="fc bfc" id="L204" title="All 2 branches covered.">            if (matchesAccount(entry.getValue().getMerchantId(), merchantId)) {</span>
+<span class="fc" id="L205">                merchantPayments.put(entry.getKey(), entry.getValue());</span>
+            }
+<span class="fc" id="L207">        }</span>
+<span class="fc" id="L208">        return merchantPayments;</span>
+    }
+
+    private boolean matchesAccount(AccountId accountId, String rawId) {
+<span class="pc bpc" id="L212" title="2 of 4 branches missed.">        if (accountId == null || rawId == null) {</span>
+<span class="nc" id="L213">            return false;</span>
+        }
+<span class="fc" id="L215">        return rawId.equals(accountId.getUuid().toString());</span>
+    }
+
+    private String serializePayments(ConcurrentHashMap&lt;String, Payment&gt; payments) {
+<span class="fc" id="L219">        StringBuilder json = new StringBuilder();</span>
+<span class="fc" id="L220">        json.append(&quot;{\&quot;payments\&quot;:[&quot;);</span>
+<span class="fc" id="L221">        boolean first = true;</span>
+<span class="fc bfc" id="L222" title="All 2 branches covered.">        for (var entry : payments.entrySet()) {</span>
+<span class="fc bfc" id="L223" title="All 2 branches covered.">            if (!first) {</span>
+<span class="fc" id="L224">                json.append(',');</span>
+            }
+<span class="fc" id="L226">            first = false;</span>
+<span class="fc" id="L227">            Payment payment = entry.getValue();</span>
+<span class="fc" id="L228">            json.append('{')</span>
+<span class="fc" id="L229">                    .append(&quot;\&quot;receiptId\&quot;:\&quot;&quot;).append(escapeJson(entry.getKey())).append(&quot;\&quot;,&quot;)</span>
+<span class="fc" id="L230">                    .append(&quot;\&quot;token\&quot;:\&quot;&quot;).append(escapeJson(payment.getToken())).append(&quot;\&quot;,&quot;)</span>
+<span class="fc" id="L231">                    .append(&quot;\&quot;merchantId\&quot;:\&quot;&quot;).append(escapeJson(accountIdToString(payment.getMerchantId()))).append(&quot;\&quot;,&quot;)</span>
+<span class="fc" id="L232">                    .append(&quot;\&quot;customerId\&quot;:\&quot;&quot;).append(escapeJson(accountIdToString(payment.getCustomerId()))).append(&quot;\&quot;,&quot;)</span>
+<span class="fc" id="L233">                    .append(&quot;\&quot;amount\&quot;:&quot;).append(payment.getAmount())</span>
+<span class="fc" id="L234">                    .append('}');</span>
+<span class="fc" id="L235">        }</span>
+<span class="fc" id="L236">        json.append(&quot;]}&quot;);</span>
+<span class="fc" id="L237">        return json.toString();</span>
+    }
+
+    private String accountIdToString(AccountId accountId) {
+<span class="pc bpc" id="L241" title="1 of 2 branches missed.">        if (accountId == null) {</span>
+<span class="nc" id="L242">            return &quot;&quot;;</span>
+        }
+<span class="fc" id="L244">        return accountId.getUuid().toString();</span>
+    }
+
+    private String escapeJson(String value) {
+<span class="pc bpc" id="L248" title="1 of 2 branches missed.">        if (value == null) {</span>
+<span class="nc" id="L249">            return &quot;&quot;;</span>
+        }
+<span class="fc" id="L251">        return value</span>
+<span class="fc" id="L252">                .replace(&quot;\\&quot;, &quot;\\\\&quot;)</span>
+<span class="fc" id="L253">                .replace(&quot;\&quot;&quot;, &quot;\\\&quot;&quot;)</span>
+<span class="fc" id="L254">                .replace(&quot;\n&quot;, &quot;\\n&quot;)</span>
+<span class="fc" id="L255">                .replace(&quot;\r&quot;, &quot;\\r&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.11.202310140853</span></div></body></html>

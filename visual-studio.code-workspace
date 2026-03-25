@@ -1,0 +1,15 @@
+{
+	"settings": {
+		
+	},
+	"extensions": {
+		"recommendations": [
+			"alexkrechik.cucumberautocomplete",
+			"lucasbiel7.cucumber-java-runner",
+			"vscjava.vscode-java-pack",
+		]
+	},
+	"tasks": {
+		"version": "2.0.0",
+	}
+}

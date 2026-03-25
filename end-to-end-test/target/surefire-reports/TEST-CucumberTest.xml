@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuite tests="33" failures="0" name="CucumberTest" time="8.31" errors="0" skipped="0">
+  <properties>
+    <property name="jansi.mode" value="force"/>
+    <property name="java.runtime.name" value="OpenJDK Runtime Environment"/>
+    <property name="java.vm.version" value="21.0.9+10-Ubuntu-124.04"/>
+    <property name="sun.boot.library.path" value="/usr/lib/jvm/java-21-openjdk-amd64/lib"/>
+    <property name="maven.multiModuleProjectDirectory" value="/home/zipek/masters-degree/DTU/Sem1/Software_dev_of_web_services/02267-Dev-of-web-services-repo"/>
+    <property name="java.vm.vendor" value="Ubuntu"/>
+    <property name="java.vendor.url" value="https://ubuntu.com/"/>
+    <property name="path.separator" value=":"/>
+    <property name="guice.disable.misplaced.annotation.check" value="true"/>
+    <property name="java.vm.name" value="OpenJDK 64-Bit Server VM"/>
+    <property name="user.country" value="US"/>
+    <property name="sun.java.launcher" value="SUN_STANDARD"/>
+    <property name="user.dir" value="/home/zipek/masters-degree/DTU/Sem1/Software_dev_of_web_services/02267-Dev-of-web-services-repo"/>
+    <property name="java.vm.compressedOopsMode" value="Zero based"/>
+    <property name="java.vm.specification.name" value="Java Virtual Machine Specification"/>
+    <property name="java.runtime.version" value="21.0.9+10-Ubuntu-124.04"/>
+    <property name="os.arch" value="amd64"/>
+    <property name="java.io.tmpdir" value="/tmp"/>
+    <property name="line.separator" value="
+"/>
+    <property name="java.vm.specification.vendor" value="Oracle Corporation"/>
+    <property name="os.name" value="Linux"/>
+    <property name="stderr.encoding" value="UTF-8"/>
+    <property name="classworlds.conf" value="/usr/share/maven/bin/m2.conf"/>
+    <property name="sun.jnu.encoding" value="UTF-8"/>
+    <property name="stdout.encoding" value="UTF-8"/>
+    <property name="java.library.path" value="/usr/java/packages/lib:/usr/lib/x86_64-linux-gnu/jni:/lib/x86_64-linux-gnu:/usr/lib/x86_64-linux-gnu:/usr/lib/jni:/lib:/usr/lib"/>
+    <property name="maven.conf" value="/usr/share/maven/conf"/>
+    <property name="jdk.debug" value="release"/>
+    <property name="java.class.version" value="65.0"/>
+    <property name="java.specification.name" value="Java Platform API Specification"/>
+    <property name="sun.management.compiler" value="HotSpot 64-Bit Tiered Compilers"/>
+    <property name="os.version" value="6.14.0-37-generic"/>
+    <property name="library.jansi.path" value="/usr/share/maven/lib/jansi-native"/>
+    <property name="user.home" value="/home/zipek"/>
+    <property name="user.timezone" value="Europe/Copenhagen"/>
+    <property name="file.encoding" value="UTF-8"/>
+    <property name="java.specification.version" value="21"/>
+    <property name="user.name" value="zipek"/>
+    <property name="java.class.path" value="/usr/share/maven/boot/plexus-classworlds-2.x.jar"/>
+    <property name="java.vm.specification.version" value="21"/>
+    <property name="sun.arch.data.model" value="64"/>
+    <property name="sun.java.command" value="org.codehaus.plexus.classworlds.launcher.Launcher -f . test"/>
+    <property name="java.home" value="/usr/lib/jvm/java-21-openjdk-amd64"/>
+    <property name="user.language" value="en"/>
+    <property name="java.specification.vendor" value="Oracle Corporation"/>
+    <property name="java.vm.info" value="mixed mode, sharing"/>
+    <property name="java.version" value="21.0.9"/>
+    <property name="native.encoding" value="UTF-8"/>
+    <property name="java.vendor" value="Ubuntu"/>
+    <property name="maven.home" value="/usr/share/maven"/>
+    <property name="file.separator" value="/"/>
+    <property name="java.version.date" value="2025-10-21"/>
+    <property name="java.vendor.url.bug" value="https://bugs.launchpad.net/ubuntu/+source/openjdk-21"/>
+    <property name="sun.cpu.endian" value="little"/>
+    <property name="sun.io.unicode.encoding" value="UnicodeLittle"/>
+    <property name="org.slf4j.simpleLogger.log.org.apache.maven.plugins.shade" value="error"/>
+  </properties>
+  <testcase classname="Bank Registration/Deregistration in DTU Pay System" name="Register merchant" time="1.636"/>
+  <testcase classname="Bank Registration/Deregistration in DTU Pay System" name="Register customer" time="0.441"/>
+  <testcase classname="Bank Registration/Deregistration in DTU Pay System" name="Two customers at the same time" time="0.161"/>
+  <testcase classname="Bank Registration/Deregistration in DTU Pay System" name="Two merchants at the same time" time="0.163"/>
+  <testcase classname="Bank Registration/Deregistration in DTU Pay System" name="Same customer registers twice" time="0.119"/>
+  <testcase classname="Bank Registration/Deregistration in DTU Pay System" name="Same merchant registers twice" time="0.113"/>
+  <testcase classname="Bank Registration/Deregistration in DTU Pay System" name="Customer deregister" time="0.121"/>
+  <testcase classname="Bank Registration/Deregistration in DTU Pay System" name="Merchant deregister" time="0.112"/>
+  <testcase classname="Payment Processing in DTU Pay System" name="Merchant initiates payment" time="0.427"/>
+  <testcase classname="Payment Processing in DTU Pay System" name="Customer used invalid bank information" time="0.208"/>
+  <testcase classname="Payment Processing in DTU Pay System" name="Customer token can not be used after deregistering" time="0.184"/>
+  <testcase classname="Payment Processing in DTU Pay System" name="Invalid token used for payment" time="0.199"/>
+  <testcase classname="Payment Processing in DTU Pay System" name="Already used token is used for payment" time="0.272"/>
+  <testcase classname="Payment Processing in DTU Pay System" name="Merchant initiates payment with customer with insufficient funds" time="0.202"/>
+  <testcase classname="Payment Processing in DTU Pay System" name="Negative payment amount" time="0.169"/>
+  <testcase classname="Payment Processing in DTU Pay System" name="Merchant recieves the money" time="0.244"/>
+  <testcase classname="Payment Processing in DTU Pay System" name="Customer uses money" time="0.253"/>
+  <testcase classname="Report Generation in DTU Pay System" name="Customer ask for an empty report" time="0.122"/>
+  <testcase classname="Report Generation in DTU Pay System" name="Customer ask for report" time="0.212"/>
+  <testcase classname="Report Generation in DTU Pay System" name="Customer ask for report history" time="0.238"/>
+  <testcase classname="Report Generation in DTU Pay System" name="Merchant ask for report" time="0.256"/>
+  <testcase classname="Report Generation in DTU Pay System" name="Merchant ask for report history" time="0.221"/>
+  <testcase classname="Report Generation in DTU Pay System" name="Manager ask for full report" time="0.507"/>
+  <testcase classname="Report Generation in DTU Pay System" name="Manager ask for report for a merchant" time="0.208"/>
+  <testcase classname="Report Generation in DTU Pay System" name="Manager ask for report for a customer" time="0.217"/>
+  <testcase classname="Report Generation in DTU Pay System" name="Manager ask for report history" time="0.204"/>
+  <testcase classname="Report Generation in DTU Pay System" name="Manager ask for report history for a merchant" time="0.21"/>
+  <testcase classname="Report Generation in DTU Pay System" name="Manager ask for report history for a customer" time="0.199"/>
+  <testcase classname="Token Request" name="Customer requests token" time="0.094"/>
+  <testcase classname="Token Request" name="Customer requests more tokens than allowed" time="0.093"/>
+  <testcase classname="Token Request" name="Customer request tokens when not allowed" time="0.101"/>
+  <testcase classname="Token Request" name="Multiple customers request tokens at the same time" time="0.151"/>
+  <testcase classname="Token Request" name="Token remains unused after payment failed" time="0.253"/>
+</testsuite>

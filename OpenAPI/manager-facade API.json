@@ -1,0 +1,149 @@
+{
+  "openapi" : "3.1.0",
+  "paths" : {
+    "/manager/history" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get Report History",
+        "tags" : [ "Manager Facade Resource" ]
+      }
+    },
+    "/manager/history/customer/{customerId}" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "customerId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get Customer Report History",
+        "tags" : [ "Manager Facade Resource" ]
+      }
+    },
+    "/manager/history/merchant/{merchantId}" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "merchantId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get Merchant Report History",
+        "tags" : [ "Manager Facade Resource" ]
+      }
+    },
+    "/manager/payments" : {
+      "get" : {
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get All Report",
+        "tags" : [ "Manager Facade Resource" ]
+      }
+    },
+    "/manager/payments/customer/{customerId}" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "customerId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get Customer Report",
+        "tags" : [ "Manager Facade Resource" ]
+      }
+    },
+    "/manager/payments/merchant/{merchantId}" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "merchantId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get Merchant Report",
+        "tags" : [ "Manager Facade Resource" ]
+      }
+    }
+  },
+  "info" : {
+    "title" : "manager-facade API",
+    "version" : "1.0.0"
+  }
+}

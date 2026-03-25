@@ -1,0 +1,179 @@
+{
+  "openapi" : "3.1.0",
+  "components" : {
+    "schemas" : {
+      "Merchant" : {
+        "type" : "object",
+        "properties" : {
+          "cpr" : {
+            "type" : "string"
+          },
+          "firstName" : {
+            "type" : "string"
+          },
+          "lastName" : {
+            "type" : "string"
+          },
+          "merchantBankId" : {
+            "type" : "string"
+          }
+        }
+      },
+      "PaymentRequest" : {
+        "type" : "object",
+        "properties" : {
+          "amount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "merchantID" : {
+            "type" : "string"
+          },
+          "token" : {
+            "type" : "string"
+          }
+        }
+      }
+    }
+  },
+  "paths" : {
+    "/merchant" : {
+      "post" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/Merchant"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "text/plain" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Register Merchant",
+        "tags" : [ "Merchant Facade Resource" ]
+      }
+    },
+    "/merchant/payment" : {
+      "post" : {
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/PaymentRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "text/plain" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Payment",
+        "tags" : [ "Merchant Facade Resource" ]
+      }
+    },
+    "/merchant/{merchantId}" : {
+      "delete" : {
+        "parameters" : [ {
+          "name" : "merchantId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "text/plain" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Deregister Merchant",
+        "tags" : [ "Merchant Facade Resource" ]
+      }
+    },
+    "/merchant/{merchantId}/report" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "merchantId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get Merchant Report",
+        "tags" : [ "Merchant Facade Resource" ]
+      }
+    },
+    "/merchant/{merchantId}/report/history" : {
+      "get" : {
+        "parameters" : [ {
+          "name" : "merchantId",
+          "in" : "path",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            }
+          }
+        },
+        "summary" : "Get Merchant Report History",
+        "tags" : [ "Merchant Facade Resource" ]
+      }
+    }
+  },
+  "info" : {
+    "title" : "merchant-facade API",
+    "version" : "1.0.0"
+  }
+}

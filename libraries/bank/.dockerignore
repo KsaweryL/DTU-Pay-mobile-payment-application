@@ -1,0 +1,9 @@
+# Ignore everything by default
+**
+
+# Allow source and build artifacts needed for the image
+!features/
+!target/
+!target/lib/
+!target/classes/
+!target/test-classes/

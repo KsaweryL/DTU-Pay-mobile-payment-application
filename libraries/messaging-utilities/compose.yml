@@ -1,0 +1,8 @@
+services:
+  rabbitMq:
+    image: rabbitmq:management
+    container_name: rabbitMq_container
+# Choose ports, these are default from Hubert
+    ports:
+     - "5672:5672"
+     - "15672:15672"
