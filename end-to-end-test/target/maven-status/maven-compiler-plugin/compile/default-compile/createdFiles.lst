@@ -1,8 +1,0 @@
-dtu/pay/resources/PaymentRequest.class
-dtu/pay/resources/Customer.class
-dtu/pay/TokenService.class
-dtu/pay/AccountManagerService.class
-dtu/pay/resources/Merchant.class
-dtu/pay/ReportManagerService.class
-dtu/pay/PaymentService.class
-dtu/pay/resources/Payment.class

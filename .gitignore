@@ -1,0 +1,145 @@
+# ===== Java / Maven =====
+target/
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+dependency-reduced-pom.xml
+
+# BlueJ files
+*.ctxt
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Additional package files
+*.nar
+*.zip
+*.tar.gz
+*.rar
+
+# JVM crash logs
+hs_err_pid*
+replay_pid*
+
+
+# ===== Maven wrapper (only keep at repo root if you use it) =====
+**/mvnw
+**/mvnw.cmd
+.mvn/wrapper/*.log
+
+
+# ===== Logs =====
+*.log
+logs/
+**/logs/
+nohup.out
+
+
+# ===== IDE: IntelliJ IDEA =====
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+
+
+# ===== IDE: VS Code =====
+.vscode/
+!.vscode/settings.json
+!.vscode/extensions.json
+!.vscode/tasks.json
+!.vscode/launch.json
+
+
+# ===== IDE: Eclipse =====
+.project
+.classpath
+.settings/
+bin/
+
+
+# ===== OS files =====
+# macOS
+.DS_Store
+__MACOSX/
+.AppleDouble
+.LSOverride
+Icon
+
+# Thumbnails
+._*
+
+# Files that might appear in the root of a volume
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Directories potentially created on remote AFP share
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+
+# ===== Build / coverage =====
+coverage/
+*.exec
+.lcov
+jacoco.exec
+jacoco.xml
+
+
+# ===== Environment / secrets =====
+.env
+.env.*
+*.local
+application-local.yml
+application-local.properties
+application-dev.yml
+application-dev.properties
+
+
+# ===== Containers =====
+docker-compose.override.yml
+
+
+# ===== Temporary / misc =====
+tmp/
+temp/
+*.swp
+*.swo
+*~
+
+# Custom
+.metal/
+tools/
