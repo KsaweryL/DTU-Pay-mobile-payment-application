@@ -12,7 +12,7 @@ End to end tests can be run using command
 ```
 
 However, becasue this is a redacted version of the original project, the tests will most likely fail due to several reasons:
-- Original API key to our production sevrer
+- Original API key to our production sevrer is not included
 - Password and username to Jenkins on prodcution server is not included
 - Production sevrer is down
 
